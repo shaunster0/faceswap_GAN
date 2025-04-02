@@ -32,7 +32,7 @@ class LFWDataset(Dataset):
         aligned = self.landmark_detector.align_face(img)
 
         if aligned is None:
-            # fallback to center crop if no face detected
+            print(f"[WARN] No face detected in: {path}")
             img = cv2.resize(img, (112, 112))
             aligned = Image.fromarray(img)  # manually convert to PIL
         return aligned 

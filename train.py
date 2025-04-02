@@ -4,12 +4,12 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from models.generator import Generator
+from models.generator import AADGenerator
 # from models.encoder import IdentityEncoder, AttributeEncoder
 from models.encoder import ArcFaceIdentityEncoder, AttributeEncoder
 from models.discriminator import Discriminator
 from dataset import LFWDataset
-from loss import LossManager
+from loss import LossManager, LossFunction
 
 # Config
 DATA_DIR = "/media/shaun/T7/personal/IDVerse/archive/lfw-funneled/lfw_funneled"
@@ -31,7 +31,7 @@ dataset = LFWDataset(DATA_DIR, transform=transform)
 dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
 # Models
-generator = Generator().to(DEVICE)
+generator = AADGenerator().to(DEVICE)
 identity_encoder = ArcFaceIdentityEncoder('/media/shaun/T7/personal/IDVerse/arcface_model/backbone.pth').to(DEVICE)
 attribute_encoder = AttributeEncoder().to(DEVICE)
 discriminator = Discriminator().to(DEVICE)
@@ -41,7 +41,11 @@ g_optim = torch.optim.Adam(generator.parameters(), lr=2e-4, betas=(0.5, 0.999))
 d_optim = torch.optim.Adam(discriminator.parameters(), lr=2e-4, betas=(0.5, 0.999))
 
 # Loss Manager
-loss_fn = LossManager()
+loss_fn = LossFunction(identity_model=identity_encoder, weights={
+    'adv': 1.0,
+    'rec': 10.0,
+    'id': 5.0
+})
 
 # Training loop
 for epoch in range(EPOCHS):
@@ -51,10 +55,10 @@ for epoch in range(EPOCHS):
         # Encode identity and attributes
         with torch.no_grad():
             z_id = identity_encoder(source)
-        z_attr = attribute_encoder(target)
+        z_attrs = attribute_encoder(target)
 
         # Generate face
-        generated = generator(z_id, z_attr)
+        generated = generator(z_id, z_attrs)
 
         # Discriminator update
         d_real = discriminator(target)
