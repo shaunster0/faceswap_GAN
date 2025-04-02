@@ -69,14 +69,14 @@ class AADGenerator(nn.Module):
         self.fc = nn.Linear(z_id_dim, 512 * 4 * 4)
 
         self.blocks = nn.ModuleList([
-            AADResBlock(512, 512, z_id_dim, 512),  # z_attr0
-            AADResBlock(512, 512, z_id_dim, 512),  # z_attr1
-            AADResBlock(512, 256, z_id_dim, 256),  # z_attr2
-            AADResBlock(256, 128, z_id_dim, 128),  # z_attr3
-            AADResBlock(128, 64, z_id_dim, 64),    # z_attr4
-            AADResBlock(64, 32, z_id_dim, 32),     # z_attr5
-            AADResBlock(32, 16, z_id_dim, 16),     # z_attr6
-            AADResBlock(16, 8, z_id_dim, 8),       # z_attr7
+            AADResBlock(512, 512, z_id_dim, 64),    # z_attrs[0] from encoder
+            AADResBlock(512, 512, z_id_dim, 64),    # z_attrs[1]
+            AADResBlock(512, 256, z_id_dim, 128),   # z_attrs[2]
+            AADResBlock(256, 128, z_id_dim, 256),   # z_attrs[3]
+            AADResBlock(128, 64, z_id_dim, 512),    # z_attrs[4]
+            AADResBlock(64, 32, z_id_dim, 256),     # z_attrs[5]
+            AADResBlock(32, 16, z_id_dim, 128),     # z_attrs[6]
+            AADResBlock(16, 8, z_id_dim, 64),       # z_attrs[7]
         ])
 
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
@@ -89,3 +89,4 @@ class AADGenerator(nn.Module):
 
         x = F.interpolate(x, size=(112, 112), mode='bilinear', align_corners=False)
         return torch.tanh(self.out_conv(x))
+    

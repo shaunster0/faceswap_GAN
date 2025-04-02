@@ -66,15 +66,7 @@ class AttributeEncoder_enc(nn.Module):
         return x
     
 
-def conv4x4(in_channels, out_channels):
-    return nn.Sequential(
-        nn.Conv2d(in_channels, out_channels, kernel_size=4, stride=2, padding=1),
-        nn.BatchNorm2d(out_channels),
-        nn.ReLU(inplace=True)
-    )
-
-
-def deconv4x4(in_channels, out_channels):
+def deconv_block(in_channels, out_channels):
     return nn.Sequential(
         nn.ConvTranspose2d(in_channels, out_channels, kernel_size=4, stride=2, padding=1),
         nn.BatchNorm2d(out_channels),
@@ -85,44 +77,43 @@ def deconv4x4(in_channels, out_channels):
 class AttributeEncoder(nn.Module):
     def __init__(self):
         super().__init__()
-        # Encoder
-        self.conv1 = conv4x4(3, 32)       # -> 32x128x128
-        self.conv2 = conv4x4(32, 64)      # -> 64x64x64
-        self.conv3 = conv4x4(64, 128)     # -> 128x32x32
-        self.conv4 = conv4x4(128, 256)    # -> 256x16x16
-        self.conv5 = conv4x4(256, 512)    # -> 512x8x8
-        self.conv6 = conv4x4(512, 512)    # -> 512x4x4
+        resnet = models.resnet18(pretrained=True)
 
-        # Decoder
-        self.deconv1 = deconv4x4(512, 512)  # -> 512x8x8
-        self.deconv2 = deconv4x4(512, 256)  # -> 256x16x16
-        self.deconv3 = deconv4x4(256, 128)  # -> 128x32x32
-        self.deconv4 = deconv4x4(128, 64)   # -> 64x64x64
-        self.deconv5 = deconv4x4(64, 32)    # -> 32x128x128
-        self.deconv6 = deconv4x4(32, 16)    # -> 16x256x256 (if needed)
+        # Extract early layers from ResNet18 as encoder
+        self.enc1 = nn.Sequential(resnet.conv1, resnet.bn1, resnet.relu)  # -> [64, 112, 112]
+        self.enc2 = nn.Sequential(resnet.maxpool, resnet.layer1)          # -> [64, 56, 56]
+        self.enc3 = resnet.layer2                                         # -> [128, 28, 28]
+        self.enc4 = resnet.layer3                                         # -> [256, 14, 14]
+        self.enc5 = resnet.layer4                                         # -> [512, 7, 7]
 
-        self.to_8ch = nn.Conv2d(16, 8, kernel_size=3, padding=1)  # -> 8 channels for z_attr[7]
+        # Decoder blocks to mirror encoder (upsampling path)
+        self.dec1 = self._deconv(512, 256)  # -> [256, 14, 14]
+        self.dec2 = self._deconv(256, 128)  # -> [128, 28, 28]
+        self.dec3 = self._deconv(128, 64)   # -> [64, 56, 56]
+        self.dec4 = self._deconv(64, 64)    # -> [64, 112, 112]
+
+    def _deconv(self, in_channels, out_channels):
+        return nn.Sequential(
+            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True)
+        )
 
     def forward(self, x):
-        # Encoder
-        e1 = self.conv1(x)   # 32x128x128
-        e2 = self.conv2(e1)  # 64x64x64
-        e3 = self.conv3(e2)  # 128x32x32
-        e4 = self.conv4(e3)  # 256x16x16
-        e5 = self.conv5(e4)  # 512x8x8
-        e6 = self.conv6(e5)  # 512x4x4
+        # Encoder (downsample path)
+        e1 = self.enc1(x)  # [64, 112, 112]
+        e2 = self.enc2(e1) # [64, 56, 56]
+        e3 = self.enc3(e2) # [128, 28, 28]
+        e4 = self.enc4(e3) # [256, 14, 14]
+        e5 = self.enc5(e4) # [512, 7, 7]
 
-        # Decoder
-        d1 = self.deconv1(e6)                 # 512x8x8
-        d2 = self.deconv2(d1)                 # 256x16x16
-        d3 = self.deconv3(d2)                 # 128x32x32
-        d4 = self.deconv4(d3)                 # 64x64x64
-        d5 = self.deconv5(d4)                 # 32x128x128
-        d6 = self.deconv6(d5)                 # 16x256x256
+        # Decoder (upsample path)
+        d1 = self.dec1(e5) # [256, 14, 14]
+        d2 = self.dec2(d1) # [128, 28, 28]
+        d3 = self.dec3(d2) # [64, 56, 56]
+        d4 = self.dec4(d3) # [64, 112, 112]
 
-        d7 = F.interpolate(d6, size=(112, 112), mode='bilinear', align_corners=False)
-        d7 = self.to_8ch(d7)                  # 8x112x112
-
-        # Return list of feature maps for AAD blocks
-        return [e6, d1, d2, d3, d4, d5, d6, d7]
+        # Return 8 feature maps for 8 AAD blocks
+        return [e1, e2, e3, e4, e5, d1, d2, d4]
 
