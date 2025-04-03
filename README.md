@@ -2,6 +2,8 @@
 
 This project implements a face-swapping model using PyTorch. It leverages an identity encoder (ArcFace), an attribute encoder (U-Net-based), and a generator with Adaptive Attention Denormalization (AAD) blocks to produce high-fidelity swapped face images.
 
+Training is currently occuring on WANDB at https://wandb.ai/shaunwerkhoven-i/faceswap_GAN
+
 <p align="center">
   <img src="assets/demo_swap.png" alt="Example Face Swap" width="600"/>
 </p>
