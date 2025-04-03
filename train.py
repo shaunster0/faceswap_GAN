@@ -10,11 +10,12 @@ from loss import LossManager, LossFunction
 from models.generator import AADGenerator
 from models.encoder import ArcFaceIdentityEncoder, AttributeEncoder
 from models.discriminator import Discriminator, PatchDiscriminator
+from utils.log_utils import log_side_by_side_images
 
 
 # Config
 DATA_DIR = "/media/shaun/T7/personal/IDVerse/archive/lfw-funneled/lfw_funneled"
-BATCH_SIZE = 8
+BATCH_SIZE = 16
 EPOCHS = 10
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 CHECKPOINT_DIR = "./checkpoints"
@@ -33,6 +34,7 @@ wandb.init(project='faceswap_GAN', entity='shaunwerkhoven-i', config={
     "identity_encoder": "ArcFace",
     "attribute_encoder": "ResNet-UNet",
     "discriminator": "PatchGAN",
+    "dataset": "LFW Funneled",
 })
 
 # Transforms
@@ -53,7 +55,7 @@ attribute_encoder = AttributeEncoder().to(DEVICE)
 discriminator = Discriminator().to(DEVICE)
 
 # Optimizers
-g_optim = torch.optim.Adam(generator.parameters(), lr=2e-4, betas=(0.5, 0.999))
+g_optim = torch.optim.Adam(generator.parameters(), lr=2e-4, betas=(0.1, 0.999))
 d_optim = torch.optim.Adam(discriminator.parameters(), lr=2e-4, betas=(0.05, 0.999))
 
 # Loss Manager
@@ -106,17 +108,8 @@ for epoch in range(EPOCHS):
             "id_loss": losses_dict['id_loss']
         })
 
-        if i % 500 == 0 or i in [5, 50, 100, 200]:
-            # Convert tensor to image for display (assuming in [-1, 1] range)
-            def tensor_to_image(tensor):
-                tensor = tensor.detach().cpu() * 0.5 + 0.5  # Denormalize
-                return wandb.Image(tensor)
-
-            wandb.log({
-                "Generated Image": tensor_to_image(generated[0]),
-                "Target Image": tensor_to_image(target[0]),
-                "Source Image": tensor_to_image(source[0])
-            })
+        if i % 50 == 0:
+            log_side_by_side_images(source, target, generated, step=epoch * len(dataloader) + i)
 
     # Save model checkpoints after each epoch
     torch.save({
