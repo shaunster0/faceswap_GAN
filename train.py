@@ -1,15 +1,16 @@
 # simplified_train.py
 import os
+import wandb
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from models.generator import AADGenerator
-# from models.encoder import IdentityEncoder, AttributeEncoder
-from models.encoder import ArcFaceIdentityEncoder, AttributeEncoder
-from models.discriminator import Discriminator
 from dataset import LFWDataset
 from loss import LossManager, LossFunction
+from models.generator import AADGenerator
+from models.encoder import ArcFaceIdentityEncoder, AttributeEncoder
+from models.discriminator import Discriminator, PatchDiscriminator
+
 
 # Config
 DATA_DIR = "/media/shaun/T7/personal/IDVerse/archive/lfw-funneled/lfw_funneled"
@@ -18,6 +19,21 @@ EPOCHS = 10
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 CHECKPOINT_DIR = "./checkpoints"
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
+
+wandb.init(project='faceswap_GAN', entity='shaunwerkhoven-i', config={
+    "epochs": EPOCHS,
+    "batch_size": BATCH_SIZE,
+    "learning_rate": 2e-4,
+    "g_beta1": 0.5,
+    "d_beta1": 0.05,
+    "adv_weight": 1.0,
+    "rec_weight": 10.0,
+    "id_weight": 5.0,
+    "loss_type": "hinge",
+    "identity_encoder": "ArcFace",
+    "attribute_encoder": "ResNet-UNet",
+    "discriminator": "PatchGAN",
+})
 
 # Transforms
 transform = transforms.Compose([
@@ -38,7 +54,7 @@ discriminator = Discriminator().to(DEVICE)
 
 # Optimizers
 g_optim = torch.optim.Adam(generator.parameters(), lr=2e-4, betas=(0.5, 0.999))
-d_optim = torch.optim.Adam(discriminator.parameters(), lr=2e-4, betas=(0.5, 0.999))
+d_optim = torch.optim.Adam(discriminator.parameters(), lr=2e-4, betas=(0.05, 0.999))
 
 # Loss Manager
 loss_fn = LossFunction(identity_model=identity_encoder, weights={
@@ -78,7 +94,29 @@ for epoch in range(EPOCHS):
         g_optim.step()
 
         if i % 10 == 0:
-            print(f"Epoch [{epoch+1}/{EPOCHS}] Step [{i}] D_loss: {d_loss.item():.4f} G_loss: {g_loss.item():.4f} | Detail: {losses_dict}")
+            print(f"Epoch [{epoch+1}/{EPOCHS}] Step [{i}] D_loss: {d_loss.item():.4f} \
+                    G_loss: {g_loss.item():.4f} | Detail: {losses_dict}")
+
+        wandb.log({
+            "step": epoch * len(dataloader) + i,
+            "D_loss": d_loss.item(),
+            "G_loss": g_loss.item(),
+            "adv_loss": losses_dict['adv_loss'],
+            "rec_loss": losses_dict['rec_loss'],
+            "id_loss": losses_dict['id_loss']
+        })
+
+        if i % 500 == 0 or i in [5, 50, 100, 200]:
+            # Convert tensor to image for display (assuming in [-1, 1] range)
+            def tensor_to_image(tensor):
+                tensor = tensor.detach().cpu() * 0.5 + 0.5  # Denormalize
+                return wandb.Image(tensor)
+
+            wandb.log({
+                "Generated Image": tensor_to_image(generated[0]),
+                "Target Image": tensor_to_image(target[0]),
+                "Source Image": tensor_to_image(source[0])
+            })
 
     # Save model checkpoints after each epoch
     torch.save({
@@ -91,3 +129,4 @@ for epoch in range(EPOCHS):
         'epoch': epoch + 1
     }, os.path.join(CHECKPOINT_DIR, f"checkpoint_epoch_{epoch+1}.pth"))
 
+wandb.finish()
