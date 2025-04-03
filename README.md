@@ -1,6 +1,6 @@
 # FaceSwap GAN
 
-This project implements a simplified version of the GHOST face-swapping model using PyTorch. It leverages an identity encoder (ArcFace), an attribute encoder (U-Net-based), and a generator with Adaptive Attention Denormalization (AAD) blocks to produce high-fidelity swapped face images.
+This project implements a face-swapping model using PyTorch. It leverages an identity encoder (ArcFace), an attribute encoder (U-Net-based), and a generator with Adaptive Attention Denormalization (AAD) blocks to produce high-fidelity swapped face images.
 
 <p align="center">
   <img src="assets/demo_swap.png" alt="Example Face Swap" width="600"/>
@@ -10,7 +10,7 @@ This project implements a simplified version of the GHOST face-swapping model us
 
 - U-Net-based attribute encoder with optional skip connections
 - Pretrained ArcFace identity encoder
-- AAD-based generator (inspired by [GHOST](https://github.com/zyainfal/ghost))
+- AAD-based generator
 - PatchGAN discriminator
 - Supports LFW dataset preprocessing with face alignment
 - Modular training pipeline with Weights & Biases integration
