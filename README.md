@@ -30,8 +30,20 @@ Training is currently occuring on WANDB at https://wandb.ai/shaunwerkhoven-i/fac
 2. **Install dependencies**
    ```bash
    pip install -r requirements.txt
-   
+
 3. **Download required models**
 - ArcFace weights (`backbone.pth`): place in `arcface_model/`
 - InsightFace ONNX face detector and ArcFace model: place in `insightface_func/models/antelope/`
 
+4. **Prepare LFW dataset**
+- Download LFW Funneled Images
+- Extract to: archive/lfw-funneled/lfw_funneled
+
+5. **Run training**
+   ```bash
+   python train.py
+
+## 🧠 Model Architecture
+<pre lang="markdown"> ```text Target Image ───▶ Attribute Encoder (U-Net) ───┐ Source Image ───▶ ArcFace Identity Encoder ───┼──▶ AAD Generator ───▶ Generated Face │ PatchGAN Discriminator ◀─── Real / Fake ``` </pre>
+
+   
