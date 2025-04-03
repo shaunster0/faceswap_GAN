@@ -44,6 +44,8 @@ Training is currently occuring on WANDB at https://wandb.ai/shaunwerkhoven-i/fac
    python train.py
 
 ## 🧠 Model Architecture
-<pre lang="markdown"> ```text Target Image ───▶ Attribute Encoder (U-Net) ───┐ Source Image ───▶ ArcFace Identity Encoder ───┼──▶ AAD Generator ───▶ Generated Face │ PatchGAN Discriminator ◀─── Real / Fake ``` </pre>
+<p align="center">
+  <img src="assets/model_architecture.png" alt="Model Architecture" width="700"/>
+</p>
 
    
