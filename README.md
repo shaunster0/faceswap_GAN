@@ -32,6 +32,6 @@ Training is currently occuring on WANDB at https://wandb.ai/shaunwerkhoven-i/fac
    pip install -r requirements.txt
    
 3. **Download required models**
-  ArcFace weights (backbone.pth): place in arcface_model/
+- ArcFace weights (`backbone.pth`): place in `arcface_model/`
+- InsightFace ONNX face detector and ArcFace model: place in `insightface_func/models/antelope/`
 
-  InsightFace ONNX face detector and ArcFace model: place in insightface_func/models/antelope/
