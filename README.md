@@ -48,4 +48,9 @@ Training is currently occuring on WANDB at https://wandb.ai/shaunwerkhoven-i/fac
   <img src="assets/model_architecture.png" alt="Model Architecture" width="700"/>
 </p>
 
-   
+## ✅ To-Do
+
+ - Improve visual quality with perceptual loss
+ - Add inference script
+ - Add validation metrics
+ - Support Docker for easy setup
