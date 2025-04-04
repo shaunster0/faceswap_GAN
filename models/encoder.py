@@ -64,14 +64,6 @@ class AttributeEncoder_enc(nn.Module):
         x = self.pool(x).view(x.size(0), -1)  # shape: B×512
   #      x = self.fc(x)  # optional: map to 512 if needed
         return x
-    
-
-def deconv_block(in_channels, out_channels):
-    return nn.Sequential(
-        nn.ConvTranspose2d(in_channels, out_channels, kernel_size=4, stride=2, padding=1),
-        nn.BatchNorm2d(out_channels),
-        nn.ReLU(inplace=True)
-    )
 
 
 class AttributeEncoder(nn.Module):
@@ -79,20 +71,20 @@ class AttributeEncoder(nn.Module):
         super().__init__()
         resnet = models.resnet18(pretrained=True)
 
-        # Extract early layers from ResNet18 as encoder
-        self.enc1 = nn.Sequential(resnet.conv1, resnet.bn1, resnet.relu)  # -> [64, 112, 112]
-        self.enc2 = nn.Sequential(resnet.maxpool, resnet.layer1)          # -> [64, 56, 56]
-        self.enc3 = resnet.layer2                                         # -> [128, 28, 28]
-        self.enc4 = resnet.layer3                                         # -> [256, 14, 14]
-        self.enc5 = resnet.layer4                                         # -> [512, 7, 7]
+        # Encoder
+        self.enc1 = nn.Sequential(resnet.conv1, resnet.bn1, resnet.relu)  # [64, 112, 112]
+        self.enc2 = nn.Sequential(resnet.maxpool, resnet.layer1)          # [64, 56, 56]
+        self.enc3 = resnet.layer2                                         # [128, 28, 28]
+        self.enc4 = resnet.layer3                                         # [256, 14, 14]
+        self.enc5 = resnet.layer4                                         # [512, 7, 7]
 
-        # Decoder blocks to mirror encoder (upsampling path)
-        self.dec1 = self._deconv(512, 256)  # -> [256, 14, 14]
-        self.dec2 = self._deconv(256, 128)  # -> [128, 28, 28]
-        self.dec3 = self._deconv(128, 64)   # -> [64, 56, 56]
-        self.dec4 = self._deconv(64, 64)    # -> [64, 112, 112]
+        # Decoder with skip connections (U-Net style)
+        self.dec1 = self._up_block(512 + 256, 256)  # Input: e5 + e4
+        self.dec2 = self._up_block(256 + 128, 128)  # Input: d1 + e3
+        self.dec3 = self._up_block(128 + 64, 64)    # Input: d2 + e2
+        self.dec4 = self._up_block(64 + 64, 64)     # Input: d3 + e1
 
-    def _deconv(self, in_channels, out_channels):
+    def _up_block(self, in_channels, out_channels):
         return nn.Sequential(
             nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
             nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
@@ -101,19 +93,18 @@ class AttributeEncoder(nn.Module):
         )
 
     def forward(self, x):
-        # Encoder (downsample path)
+        # Encoder
         e1 = self.enc1(x)  # [64, 112, 112]
         e2 = self.enc2(e1) # [64, 56, 56]
         e3 = self.enc3(e2) # [128, 28, 28]
         e4 = self.enc4(e3) # [256, 14, 14]
         e5 = self.enc5(e4) # [512, 7, 7]
 
-        # Decoder (upsample path)
-        d1 = self.dec1(e5) # [256, 14, 14]
-        d2 = self.dec2(d1) # [128, 28, 28]
-        d3 = self.dec3(d2) # [64, 56, 56]
-        d4 = self.dec4(d3) # [64, 112, 112]
+        # Decoder with skip connections
+        d1 = self.dec1(torch.cat([F.interpolate(e5, size=e4.shape[2:], mode='bilinear'), e4], dim=1))  # -> 256x14x14
+        d2 = self.dec2(torch.cat([F.interpolate(d1, size=e3.shape[2:], mode='bilinear'), e3], dim=1))  # -> 128x28x28
+        d3 = self.dec3(torch.cat([F.interpolate(d2, size=e2.shape[2:], mode='bilinear'), e2], dim=1))  # -> 64x56x56
+        d4 = self.dec4(torch.cat([F.interpolate(d3, size=e1.shape[2:], mode='bilinear'), e1], dim=1))  # -> 64x112x112
 
-        # Return 8 feature maps for 8 AAD blocks
+        # Return 8 feature maps for AAD blocks
         return [e1, e2, e3, e4, e5, d1, d2, d4]
-

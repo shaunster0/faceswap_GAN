@@ -1,4 +1,3 @@
-# simplified_train.py
 import os
 import wandb
 import torch
