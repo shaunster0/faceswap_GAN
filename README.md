@@ -61,7 +61,7 @@ See WANDB link above for further metrics.
 
 ## 🧠 Model Architecture
 <p align="center">
-  <img src="assets/model_architecture.png" alt="Model Architecture" width="700"/>
+  <img src="assets/AAD_architecture.png" alt="Model Architecture" width="700"/>
 </p>
 
 ## 🛠️ Scripts
