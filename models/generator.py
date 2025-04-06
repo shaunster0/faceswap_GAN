@@ -21,29 +21,52 @@ class Generator(nn.Module):
 
 
 class AADLayer(nn.Module):
-    def __init__(self, in_channels, id_channels, attr_channels):
+    def __init__(self, in_channels, id_channels, attr_channels, w_id=1.0, w_attr=0.8):
         super().__init__()
         self.norm = nn.InstanceNorm2d(in_channels, affine=False)
-        self.mlp_id_gamma = nn.Linear(id_channels, in_channels)
-        self.mlp_id_beta = nn.Linear(id_channels, in_channels)
+        self.in_channels = in_channels
+        self.w_id = w_id
+        self.w_attr = w_attr
+
+        # Identity MLPs (with ReLU)
+        self.mlp_id_gamma = nn.Sequential(
+            nn.Linear(id_channels, in_channels),
+            nn.ReLU(inplace=True)
+        )
+        self.mlp_id_beta = nn.Sequential(
+            nn.Linear(id_channels, in_channels),
+            nn.ReLU(inplace=True)
+        )
+
+        # Attribute MLPs (Conv2d)
         self.mlp_attr_gamma = nn.Conv2d(attr_channels, in_channels, kernel_size=1)
         self.mlp_attr_beta = nn.Conv2d(attr_channels, in_channels, kernel_size=1)
+
+        # Learnable spatial mask M
+        self.mask_conv = nn.Conv2d(in_channels, 1, kernel_size=1)
 
     def forward(self, x, z_id, z_attr):
         x_norm = self.norm(x)
 
-        gamma_id = self.mlp_id_gamma(z_id).unsqueeze(2).unsqueeze(3)
+        # Identity pathway
+        gamma_id = self.mlp_id_gamma(z_id).unsqueeze(2).unsqueeze(3)  # [B, C, 1, 1]
         beta_id = self.mlp_id_beta(z_id).unsqueeze(2).unsqueeze(3)
+        I = gamma_id * x_norm + beta_id
 
-        # Resize attribute feature if needed
+        # Attribute pathway
         if z_attr.shape[2:] != x.shape[2:]:
             z_attr = F.interpolate(z_attr, size=x.shape[2:], mode='bilinear', align_corners=False)
 
         gamma_attr = self.mlp_attr_gamma(z_attr)
         beta_attr = self.mlp_attr_beta(z_attr)
+        A = gamma_attr * x_norm + beta_attr
 
-        return gamma_id * x_norm + beta_id + gamma_attr * x_norm + beta_attr
+        # Adaptive blending mask
+        M = torch.sigmoid(self.mask_conv(x_norm))  # [B, 1, H, W]
 
+        # Blend the identity and attribute contributions
+        out = (1 - M) * self.w_attr * A + M * self.w_id * I
+        return out
 
 class AADResBlock(nn.Module):
     def __init__(self, in_channels, out_channels, z_id_dim, z_attr_channels):
@@ -69,18 +92,18 @@ class AADGenerator(nn.Module):
         self.fc = nn.Linear(z_id_dim, 512 * 4 * 4)
 
         self.blocks = nn.ModuleList([
-            AADResBlock(512, 512, z_id_dim, 64),    # z_attrs[0] from encoder
-            AADResBlock(512, 512, z_id_dim, 64),    # z_attrs[1]
-            AADResBlock(512, 256, z_id_dim, 128),   # z_attrs[2]
-            AADResBlock(256, 128, z_id_dim, 256),   # z_attrs[3]
-            AADResBlock(128, 64, z_id_dim, 512),    # z_attrs[4]
-            AADResBlock(64, 32, z_id_dim, 256),     # z_attrs[5]
-            AADResBlock(32, 16, z_id_dim, 128),     # z_attrs[6]
-            AADResBlock(16, 8, z_id_dim, 64),       # z_attrs[7]
+            AADResBlock(512, 512, z_id_dim, 64),    # e1
+            AADResBlock(512, 512, z_id_dim, 64),    # e2
+            AADResBlock(512, 256, z_id_dim, 128),   # e3
+            AADResBlock(256, 128, z_id_dim, 256),   # e4
+            AADResBlock(128, 128, z_id_dim, 512),   # e5
+            AADResBlock(128, 64, z_id_dim, 256),    # d1
+            AADResBlock(64, 64, z_id_dim, 128),     # d2
+            AADResBlock(64, 32, z_id_dim, 64),      # d4
         ])
 
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
-        self.out_conv = nn.Conv2d(8, 3, kernel_size=3, padding=1)
+        self.out_conv = nn.Conv2d(32, 3, kernel_size=3, padding=1)
 
     def forward(self, z_id, z_attrs):
         x = self.fc(z_id).view(-1, 512, 4, 4)

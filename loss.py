@@ -56,10 +56,10 @@ class LossFunction(nn.Module):
 
         id_loss = 0.0
         if self.identity_model:
-            with torch.no_grad():
-                embed_real = self.identity_model(target_img)
+            # with torch.no_grad():
+            #     embed_real = self.identity_model(target_img)
             embed_fake = self.identity_model(fake_img)
-            id_loss = self.id_criterion(embed_real, embed_fake)
+            id_loss = self.id_criterion(z_id, embed_fake) # embed_real
 
         total_loss = (
             self.weights['adv'] * adv_loss +

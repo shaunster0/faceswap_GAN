@@ -3,6 +3,7 @@ import torch
 from arcface_model.iresnet import iresnet100
 import segmentation_models_pytorch as smp
 import torch.nn.functional as F
+from torchvision import models
 
 
 class IdentityEncoder(nn.Module):
