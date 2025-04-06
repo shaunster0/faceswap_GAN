@@ -72,6 +72,9 @@ See WANDB link above for further metrics.
 - **`scripts/update_and_train.sh`**  
   🔄 Bash script to update the training data directory with new images and start model training. Can optionally continue from an existing checkpoint.
 
+- **`utils/infer_video.py`**   
+  🔄 Python script to perform processing on a video file (MP4).
+
 ## ✅ To-Do
 
  - Improve visual quality with perceptual loss
