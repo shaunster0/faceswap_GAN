@@ -6,7 +6,8 @@ Training is currently occuring on WANDB at https://wandb.ai/shaunwerkhoven-i/fac
 
 This project is inspired by face-swap repos such as 
 - [ghost](https://github.com/ai-forever/ghost/tree/main)
-- [faceshifter](https://github.com/maum-ai/faceshifter)
+- [faceshifter](https://github.com/maum-ai/faceshifter)  
+
 but almost all code is written from scratch.
 
 <!--
