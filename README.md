@@ -81,7 +81,7 @@ See WANDB link above for further metrics.
  - Add validation metrics
  - Support Docker for easy setup
  - Augmentation
- - More sophisticated trainig techniques (e.g. spectral normalization, contrastive identity loss)
+ - More sophisticated training techniques (e.g. spectral normalization, contrastive identity loss)
  - Multi-scale discriminator
  - Learning rate warmup
  - Better logging
