@@ -1,13 +1,11 @@
-
 #!/bin/bash
 
-#
+# USAGE:
 #./update_and_train.sh \
 #  ./new_images \
 #  ./archive/lfw-funneled/lfw_funneled \
 #  ./config/config.yaml \
 #  ./checkpoints
-#
 
 # ─── User Inputs ─────────────────────────────────────────────
 NEW_IMAGES_DIR="$1"                      # New images to add (e.g., ./new_images)
