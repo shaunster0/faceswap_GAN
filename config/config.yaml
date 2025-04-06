@@ -1,0 +1,17 @@
+# config.yaml
+
+data_dir: /media/shaun/T7/personal/IDVerse/archive/lfw-funneled/lfw_funneled
+checkpoint_dir: ./checkpoints
+checkpoint: null   # or set to "./checkpoints/checkpoint_epoch_10.pth" to resume
+
+epochs: 10
+batch_size: 24
+lr: 0.0002
+
+g_beta1: 0.1
+d_beta1: 0.05
+
+adv_weight: 1.0
+rec_weight: 3.5
+id_weight: 14.0
+
