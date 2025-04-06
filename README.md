@@ -32,8 +32,8 @@ Training is currently occuring on WANDB at https://wandb.ai/shaunwerkhoven-i/fac
    pip install -r requirements.txt
 
 3. **Download required models**
-- ArcFace weights (`backbone.pth`): place in `arcface_model/`
-- InsightFace ONNX face detector and ArcFace model: place in `insightface_func/models/antelope/`
+- Download ArcFace weights [here](https://github.com/sberbank-ai/sber-swap/releases/download/arcface/backbone.pth), place in `arcface_model/`
+- InsightFace ONNX face detectors (https://github.com/sberbank-ai/sber-swap/releases/download/antelope/glintr100.onnx) and (https://github.com/sberbank-ai/sber-swap/releases/download/antelope/scrfd_10g_bnkps.onnx), place in `insightface_func/models/antelope/`
 
 4. **Prepare LFW dataset**
 - Download LFW Funneled Images
