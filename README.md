@@ -16,7 +16,7 @@ but almost all code is written from scratch.
 </p>
 -->
 
-## Results
+## 📊 Results
 
 Training has occurred in a proper manner with declining losses. 
 See WANDB link above for further metrics.
@@ -63,6 +63,14 @@ See WANDB link above for further metrics.
 <p align="center">
   <img src="assets/model_architecture.png" alt="Model Architecture" width="700"/>
 </p>
+
+## 🛠️ Scripts
+
+- **`scripts/run_infer.sh`**  
+  ↪️ Bash script to swap faces on provided source/target images using a trained model.
+
+- **`scripts/update_and_train.sh`**  
+  🔄 Bash script to update the training data directory with new images and start model training. Can optionally continue from an existing checkpoint.
 
 ## ✅ To-Do
 
