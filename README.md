@@ -4,11 +4,26 @@ This project implements a face-swapping model using PyTorch. It leverages an ide
 
 Training is currently occuring on WANDB at https://wandb.ai/shaunwerkhoven-i/faceswap_GAN
 
+This project is inspired by face-swap repos such as 
+- [ghost](https://github.com/ai-forever/ghost/tree/main)
+- [faceshifter](https://github.com/maum-ai/faceshifter)
+but almost all code is written from scratch.
+
 <!--
 <p align="center">
   <img src="assets/demo_swap.png" alt="Example Face Swap" width="600"/>
 </p>
 -->
+
+## Results
+
+Training has occurred in a proper manner with declining losses. 
+See WANDB link above for further metrics.
+
+<p align="center">
+  <img src="assets/rec_loss.png" alt="Reconstruction Loss" width="45%" />
+  <img src="assets/discriminator_loss.png" alt="Discriminator Loss" width="45%" />
+</p>
 
 ## 🚀 Features
 
